@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Helpers\ApiResponse;
 use App\Helpers\SendMail;
+use App\Models\ChatRoom;
 use App\Models\DeviceToken;
 use App\Models\Follow;
 use App\Models\Friend;
+use App\Models\Message;
 use App\Models\Notification;
 use App\Models\User;
 use Carbon\Carbon;
@@ -446,6 +448,38 @@ class UserController extends Controller
         }
 
         return $this->apiResponse->success($deviceToken);
+    }
+
+    /**
+     * Show list friend on chat message box
+     */
+    public function listFriend(Request $request)
+    {
+        $userId = Auth::user()->id;
+        // List my friends
+        $friends = Friend::join('users', 'friends.friend_id', 'users.id')
+            ->select(
+                'users.id', 'users.name', 'users.email', 'users.avatar',
+                'users.online_status'
+            )->where('friends.user_id', $userId)
+            ->where('friends.approved', Friend::APPROVED)
+            ->orderBy('friends.created_at', 'DESC')
+            ->get();
+        $listMessage = Message::where('user_id', $userId)
+                ->orWhere('friend_id', $userId)
+                ->orderBy('created_at', 'DESC')
+                ->get();
+        foreach ($friends as $friend) {
+            $friend->last_message = "";
+            foreach ($listMessage as $msg) {
+                if ($friend->id == $msg->user_id || $friend->id == $msg->friend_id) {
+                    $friend->last_message = $msg->message;
+                    $friend->last_sent = Carbon::create($msg->created_at)->diffForHumans();
+                    continue;
+                }
+            }
+        }
+        return $this->apiResponse->success($friends);
     }
 
     /**
