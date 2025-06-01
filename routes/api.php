@@ -46,6 +46,11 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
     Route::post('/comment', [\App\Http\Controllers\TimelineController::class, 'postComment']);
     Route::get('/list-friend', [\App\Http\Controllers\UserController::class, 'listFriend']);
+    Route::get('/list-message', [\App\Http\Controllers\UserController::class, 'listMessage']);
+    Route::post('/send-message', [\App\Http\Controllers\UserController::class, 'sendMessage']);
+
+
+
 
 });
 
