@@ -438,11 +438,11 @@ class UserController extends Controller
         if (count($checkToken) == 0) {
             $deviceToken = new DeviceToken();
             $deviceToken->user_id = Auth::user()->id;
-            $deviceToken->token = $param['fcmToken'];
+            $deviceToken->token = $param['fcmToken'] ?? 0;
             $deviceToken->save();
         } else {
             $deviceToken = DeviceToken::where('user_id', $userId)->first();
-            $deviceToken->token = $param['fcmToken'];
+            $deviceToken->token = $param['fcmToken'] ?? 0;
             $deviceToken->updated_at = Carbon::now();
             $deviceToken->update();
         }
@@ -507,8 +507,7 @@ class UserController extends Controller
                 'messages.user_id', 'messages.friend_id', 'messages.is_view', 'messages.created_at'
             )->where('messages.room_id', $roomId)
             ->orderBy('messages.created_at', 'ASC')
-            ->get()
-            ->map(function ($item) use ($userId) {
+            ->get()->map(function ($item) use ($userId, $roomId) {
                 if ($item->user_id == $userId) {
                     // My message
                     $item->my_message = "me";
@@ -519,6 +518,9 @@ class UserController extends Controller
                 }
                 $carbon = Carbon::create($item->created_at);
                 $item->_created_at = $carbon->format('Y-m-d h:i');
+                $item->room_id = $roomId;
+                $item->type = "message";
+                $item->action = "join";
                 return $item;
             });
         $responseData = [
@@ -549,7 +551,10 @@ class UserController extends Controller
             "is_view"=> Message::UNVIEW,
             "created_at"=> Carbon::now(),
             "my_message"=> "me",
-            "_created_at"=> Carbon::now()->format('Y-m-d h:i')
+            "_created_at"=> Carbon::now()->format('Y-m-d h:i'),
+            "room_id" => (int) $param['room_id'],
+            "type" => "message",
+            "action" => "send-message"
         ];
         return $this->apiResponse->success($responseData);
     }
